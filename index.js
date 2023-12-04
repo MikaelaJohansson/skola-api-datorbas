@@ -1,61 +1,108 @@
-let app = require("express")(); // INSTALLERA MED "npm install express" I KOMMANDOTOLKEN
+
+// startar min app och använder mig av express, lyssnar på port 3000
+let express = require("express");
+let app = express();
 app.listen(3000);
 console.log("Servern körs på port 3000");
 
+// hämtar mitt html dokument och skickar till klient
 app.get("/", function (req, res) {
   res.sendFile(__dirname + "/dokumentation.html");
 });
 
-const mysql = require("mysql"); // INSTALLERA MED "npm install mysql" I KOMMANDOTOLKEN
+// anropar datorbas
+const mysql = require("mysql"); 
+
+//  kopplar ihop min datorbas med server
 con = mysql.createConnection({
-  host: "localhost", // databas-serverns IP-adress
-  user: "root", // standardanvändarnamn för XAMPP
-  password: "", // standardlösenord för XAMPP
-  database: "jensen2023", // ÄNDRA TILL NAMN PÅ ER EGEN DATABAS
+  host: "localhost",
+  user: "root", 
+  password: "", 
+  database: "jensen2023", 
+  multipleStatements: true, 
 });
 
-const COLUMNS = ["id", "firstname", "lastname", "userId", "password"]; // ÄNDRA TILL NAMN PÅ KOLUMNER I ER EGEN TABELL
+// namnet på minna columner i datorbasen
+const COLUMNS = ["id", "username", "password", "name", "email"]; 
 
-// grundläggande exempel - returnera en databastabell som JSON
-app.get("/user2", function (req, res) {
-  let sql = "SELECT * FROM user2"; // ÄNDRA TILL NAMN PÅ ER EGEN TABELL (om den heter något annat än "users")
-  let condition = createCondition(req.query); // output t.ex. " WHERE lastname='Rosencrantz'"
-  console.log(sql + condition); // t.ex. SELECT * FROM users WHERE lastname="Rosencrantz"
-  // skicka query till databasen
+// visar min datorbas lista som heter users
+app.get("/users", function (req, res) {
+  let sql = "SELECT * FROM users";
+  let condition = createCondition(req.query); 
+  console.log(sql + condition); 
+ 
   con.query(sql + condition, function (err, result, fields) {
     res.send(result);
   });
 });
-
 let createCondition = function (query) {
-  // skapar ett WHERE-villkor utifrån query-parametrar
   console.log(query);
   let output = " WHERE ";
   for (let key in query) {
     if (COLUMNS.includes(key)) {
-      // om vi har ett kolumnnamn i vårt query
-      output += `${key}="${query[key]}" OR `; // t.ex. lastname="Rosencrantz"
+     
+      output += `${key}="${query[key]}" OR `;
     }
   }
   if (output.length == 7) {
-    // " WHERE "
-    return ""; // om query är tomt eller inte är relevant för vår databastabell - returnera en tom sträng
+    return ""; 
   } else {
-    return output.substring(0, output.length - 4); // ta bort sista " OR "
+    return output.substring(0, output.length - 4);
   }
 };
 
-// route-parameter, dvs. filtrera efter ID i URL:en
-app.get("/user2/:id", function (req, res) {
-  // Värdet på id ligger i req.params
-  let sql = "SELECT * FROM user2 WHERE id=" + req.params.id;
+
+
+// api som gör att man kan söka i min datorbas users list id
+app.get("/users/:id", function (req, res) {
+  let sql = "SELECT * FROM users WHERE id=" + req.params.id;
   console.log(sql);
-  // skicka query till databasen
+  
   con.query(sql, function (err, result, fields) {
     if (result.length > 0) {
       res.send(result);
     } else {
-      res.sendStatus(404); // 404=not found
+      res.sendStatus(404); 
     }
+  });
+});
+
+// så att man kan läsa json format
+app.use(express.json()); 
+
+
+// gör så att man kan lägga till en ny användare i datorbasens users list
+app.post("/users", function (req, res) {
+  if (!req.body.username) {
+    res.status(400).send("username required!");
+    return; 
+  }
+  let fields = ["username", "password", "name", "email"]; 
+  for (let key in req.body) {
+    if (!fields.includes(key)) {
+      res.status(400).send("Unknown field: " + key);
+      return; 
+    }
+  }
+ 
+  let sql = `INSERT INTO users (username, password, name, email)
+    VALUES ('${req.body.username}', 
+    '${req.body.password}',
+    '${req.body.name}',
+    '${req.body.email}');
+    SELECT LAST_INSERT_ID();`; 
+  console.log(sql);
+
+  con.query(sql, function (err, result, fields) {
+    if (err) throw err;
+    console.log(result);
+    let output = {
+      id: result[0].insertId,
+      username: req.body.username,
+      password: req.body.password,
+      name: req.body.name,
+      email: req.body.email,
+    };
+    res.send(output);
   });
 });

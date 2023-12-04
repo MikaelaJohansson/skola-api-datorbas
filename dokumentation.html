@@ -10,14 +10,19 @@
         <h1>Dokumentation av det här APIet</h1>
         <h2>Routes</h2>
   
-        <ul>
-  
-          <li><em>GET /users</em> - returnerar alla användare.</li>
-  
-          <li><em>GET /users/{id}</em> - returnerar en user med angivet id eller status 404 om användaren saknas.</li>
-  
-  
-        </p>
+       <p>
+         appGET / localhost "/" rad 9 - min första get route. den levererar denna <br>
+         html sida till klient.<br>
+         <br>
+         appGET /users rad 28 - En route som sender tillbacka hela listans innehåll i users <br>
+         som ligger i min datorbas jensen 2023. <br>
+         <br>
+         appGET /users/:id rad 56- returnerar ett id från min users lista. Som<br>
+         ligger i min datorbas jensen 2013.<br>
+         <br>
+         appPOST /users rad 72 - Denna route uppdaterar datorbasens users,<br>
+         med nya username, password, name, email <br>       
+       </p>
   
       </body>
 </body>
